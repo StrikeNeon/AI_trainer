@@ -1,24 +1,27 @@
 import pyttsx3
-engine = pyttsx3.init()  # object creation
 
 
-""" RATE"""
-rate = engine.getProperty('rate')   # getting details of current speaking rate
-print(rate)                        # printing current voice rate
-engine.setProperty('rate', 125)     # setting up new voice rate
+class voice_constructor():
 
+    def __init__(self):
+        self.engine = pyttsx3.init()  # object creation
+        self.rate = self.engine.getProperty('rate')
+        self.volume = self.engine.getProperty('volume')
+        self.voices = self.engine.getProperty('voices')
 
-"""VOLUME"""
-volume = engine.getProperty('volume')   # getting to know current volume level (min=0 and max=1)
-print(volume)                          # printing current volume level
-engine.setProperty('volume', 1.0)    # setting up volume level  between 0 and 1
+    def set_rate(self, rate: int = 125):
+        self.engine.setProperty('rate', rate)
 
-"""VOICE"""
-voices = engine.getProperty('voices')       # getting details of current voice
-print([voice.id for voice in voices])
-# engine.setProperty('voice', voices[0].id)  # changing index, changes voices. o for male
-engine.setProperty('voice', voices[1].id)   # changing index, changes voices. 1 for female
+    def set_volume(self, volume: float = 1.0):
+        self.engine.setProperty('volume', volume)
 
-engine.say("Hello World!")
-engine.runAndWait()
-engine.stop()
+    def set_voice(self, voice_index: int = 0):
+        self.engine.setProperty('voice', self.voices[voice_index].id)
+
+    def print_voices(self):
+        print([voice.id for voice in self.voices])
+
+    def say_phrase(self, phrase: str):
+        self.engine.say(phrase)
+        self.engine.runAndWait()
+        self.engine.stop()
