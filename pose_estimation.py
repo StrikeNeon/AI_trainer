@@ -1,6 +1,7 @@
+import math
 import mediapipe
 from numpy import ndarray
-
+from cv2 import line
 
 class pose_tracker():
     def __init__(self, mode: bool = False, upBody: bool = False, smooth: bool = True,
@@ -27,7 +28,8 @@ class pose_tracker():
         for landmark_id, landmark in enumerate(pose.landmark):
             height, width, channels = rgb_frame.shape
             cx, cy = int(landmark.x*width), int(landmark.y*height)
-            pose_data[landmark_id] = [landmark.x, landmark.y, landmark.z, cx, cy]
+            pose_data[landmark_id] = [landmark.x, landmark.y,
+                                      landmark.z, cx, cy]
         return pose_data
 
     def draw_debug_landmarks(self, rgb_frame: ndarray, pose: list):
@@ -37,10 +39,23 @@ class pose_tracker():
         return rgb_frame
 
     def draw_joint_group(self, rgb_frame: ndarray, joint_group: list):
-        raise NotImplementedError
-    
-    def get_joint_angles(self, rgb_frame: ndarray, joint_group: list):
-        raise NotImplementedError
+        # joint group 0 is x, 1 is y
+        # a joint group would be 2 lines
+        line(rgb_frame,
+             (joint_group[0][0], joint_group[0][1]),
+             (joint_group[1][0], joint_group[0][1]),
+             (155, 0, 0), 3)
+        line(rgb_frame,
+             (joint_group[1][0], joint_group[0][1]),
+             (joint_group[2][0], joint_group[2][1]),
+             (155, 0, 0), 3)
 
-    def get_keypoint_distance(self, rgb_frame: ndarray, keypoints: list):
-        raise NotImplementedError
+    def get_joint_angles(self, joint_group: list):
+        return math.degrees(math.atan2(joint_group[2][1]-joint_group[1][1],
+                                       joint_group[2][0]-joint_group[1][0]) -
+                            math.atan2(joint_group[0][1]-joint_group[1][1],
+                                       joint_group[0][0]-joint_group[1][0]))
+
+    def get_keypoint_distance(self, keypoints: list):
+        return math.hypot(keypoints[0][0]-keypoints[1][0],
+                          keypoints[0][1]-keypoints[1][1])
