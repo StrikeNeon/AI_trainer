@@ -34,13 +34,17 @@ def main():
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
                 try:
-                    r_arm_group = [[pose_data.get(12)[3], pose_data.get(12)[4]],
-                                    [pose_data.get(14)[3], pose_data.get(14)[4]],
-                                    [pose_data.get(16)[3], pose_data.get(16)[4]]]
+                    r_arm_group = p_tracker.format_joint_group([pose_data.get(12),
+                                                                pose_data.get(14),
+                                                                pose_data.get(16)])
                     frame = p_tracker.draw_debug_landmarks(frame, pose)
                     p_tracker.draw_joint_group(frame, r_arm_group)
-                    r_angles = p_tracker.get_joint_angles(r_arm_group)
-                    print(r_angles)
+                    r_angle = p_tracker.get_joint_angles(r_arm_group)
+                    if r_angle < 0:
+                        r_angle = r_angle*-1
+                    lift_completion = p_tracker.comput_completion(r_angle,
+                                                                  40, 150)
+                    print(r_angle, lift_completion)
                 except Exception as ex:
                     print(ex)
             cv2.imshow('frame', frame)
