@@ -21,7 +21,7 @@ def main():
     cap = cv2.VideoCapture(0)
     cap.set(3, cam_width), cap.set(4, cam_height)
     # cap = cv2.VideoCapture('jerma_walking.mp4')
-    p_tracker = pose_tracker(debug_draw=True)
+    p_tracker = pose_tracker(debug_draw=False)
     voice = voice_constructor()
     found = False
     try:
@@ -33,7 +33,16 @@ def main():
                     voice.say_phrase("found you")
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
-                frame = p_tracker.draw_debug_landmarks(frame, pose)
+                try:
+                    r_arm_group = [[pose_data.get(12)[3], pose_data.get(12)[4]],
+                                    [pose_data.get(14)[3], pose_data.get(14)[4]],
+                                    [pose_data.get(16)[3], pose_data.get(16)[4]]]
+                    frame = p_tracker.draw_debug_landmarks(frame, pose)
+                    p_tracker.draw_joint_group(frame, r_arm_group)
+                    r_angles = p_tracker.get_joint_angles(r_arm_group)
+                    print(r_angles)
+                except Exception as ex:
+                    print(ex)
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) == ord('q'):
                 break
@@ -45,5 +54,6 @@ def main():
         cap.release()
         cv2.destroyAllWindows()
         return(1)
+
 
 main()

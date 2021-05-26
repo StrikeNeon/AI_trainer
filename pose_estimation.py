@@ -43,10 +43,10 @@ class pose_tracker():
         # a joint group would be 2 lines
         line(rgb_frame,
              (joint_group[0][0], joint_group[0][1]),
-             (joint_group[1][0], joint_group[0][1]),
+             (joint_group[1][0], joint_group[1][1]),
              (155, 0, 0), 3)
         line(rgb_frame,
-             (joint_group[1][0], joint_group[0][1]),
+             (joint_group[1][0], joint_group[1][1]),
              (joint_group[2][0], joint_group[2][1]),
              (155, 0, 0), 3)
 
