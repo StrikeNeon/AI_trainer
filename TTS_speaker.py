@@ -21,7 +21,7 @@ class voice_constructor():
     def print_voices(self):
         print([voice.id for voice in self.voices])
 
-    def say_phrase(self, phrase: str):
+    async def say_phrase(self, phrase: str):
         self.engine.say(phrase)
         self.engine.runAndWait()
         self.engine.stop()

@@ -1,5 +1,7 @@
+import asyncio
 import cv2
 from pose_estimation import pose_tracker
+from lift_computer import compute_bicep_curl
 from TTS_speaker import voice_constructor
 
 # TODO pose classification module
@@ -22,31 +24,55 @@ def main():
     cap.set(3, cam_width), cap.set(4, cam_height)
     # cap = cv2.VideoCapture('jerma_walking.mp4')
     p_tracker = pose_tracker(debug_draw=False)
+    voice_loop = asyncio.new_event_loop()
     voice = voice_constructor()
     found = False
+    started = False
+    finished = False
+    lift_done = False
+    lifts = 0
+    ex_limit = 10
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             pose = p_tracker.find_poses(frame)
             if pose:
                 if not found:
-                    voice.say_phrase("found you")
+                    voice_loop.run_until_complete(voice.say_phrase("found you"))
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
-                try:
-                    r_arm_group = p_tracker.format_joint_group([pose_data.get(12),
-                                                                pose_data.get(14),
-                                                                pose_data.get(16)])
-                    frame = p_tracker.draw_debug_landmarks(frame, pose)
-                    p_tracker.draw_joint_group(frame, r_arm_group)
-                    r_angle = p_tracker.get_joint_angles(r_arm_group)
-                    if r_angle < 0:
-                        r_angle = r_angle*-1
-                    lift_completion = p_tracker.comput_completion(r_angle,
-                                                                  40, 150)
-                    print(r_angle, lift_completion)
-                except Exception as ex:
-                    print(ex)
+                # classifier here, matching scheduled pose to classified and ensuring starting teminal state
+                completion, frame = compute_bicep_curl(p_tracker, pose_data, frame)
+                if completion == 0:
+                    if not finished:
+                        started = True
+                        lift_done = False
+                    else:
+                        lifts = 0
+                        lift_done = False
+                        finished = False
+                        voice_loop.run_until_complete(voice.say_phrase("погнал"))
+                if started and completion < 1:
+                    print(completion)
+                if started and completion == 1:
+                    if lift_done:
+                        pass
+                    else:
+                        if lifts+1 == ex_limit:
+                            if not finished:
+                                finished = True
+                                voice_loop.run_until_complete(voice.say_phrase(f"{ex_limit}"))
+                                voice_loop.run_until_complete(voice.say_phrase("finished"))
+                            else:
+                                pass
+                        else:
+                            lifts += 1
+                            voice_loop.run_until_complete(voice.say_phrase(f"{lifts}"))
+                        lift_done = True
+            else:
+                if found:
+                    voice_loop.run_until_complete(voice.say_phrase("lost you"))
+                    found = False
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) == ord('q'):
                 break

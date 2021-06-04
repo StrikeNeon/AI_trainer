@@ -60,8 +60,8 @@ class pose_tracker():
                             math.atan2(joint_group[0][1]-joint_group[1][1],
                                        joint_group[0][0]-joint_group[1][0]))
 
-    def comput_completion(self, angle: float, l_bound: int, u_bound: int):
-        return interp(angle, [l_bound, u_bound], [1.0, 0.0])
+    def compute_completion(self, angle: float, l_bound: int, u_bound: int):
+        return interp(angle, [u_bound, l_bound], [1.0, 0.0])
 
     def get_keypoint_distance(self, keypoints: list):
         return math.hypot(keypoints[0][0]-keypoints[1][0],
