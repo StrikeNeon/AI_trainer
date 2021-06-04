@@ -17,12 +17,13 @@ from TTS_speaker import voice_constructor
 # key points, like wrist to sholder for curls, chest to wrist for pushups etc
 
 
-def main():
+def main(excercise:str, ex_limit: int):
     cam_width, cam_height = 640, 480
 
     cap = cv2.VideoCapture(0)
     cap.set(3, cam_width), cap.set(4, cam_height)
     # cap = cv2.VideoCapture('jerma_walking.mp4')
+    ex_dict = {"curls": compute_bicep_curl, "push-up": None, "bench": None}
     p_tracker = pose_tracker(debug_draw=False)
     voice_loop = asyncio.new_event_loop()
     voice = voice_constructor()
@@ -31,18 +32,22 @@ def main():
     finished = False
     lift_done = False
     lifts = 0
-    ex_limit = 10
+    ex_limit = ex_limit
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             pose = p_tracker.find_poses(frame)
             if pose:
                 if not found:
-                    voice_loop.run_until_complete(voice.say_phrase("found you"))
+                    voice_loop.run_until_complete(voice.say_phrase("найден"))
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
+
                 # classifier here, matching scheduled pose to classified and ensuring starting teminal state
-                completion, frame = compute_bicep_curl(p_tracker, pose_data, frame)
+
+                completion, frame = ex_dict[excercise](p_tracker,
+                                                       pose_data,
+                                                       frame)
                 if completion == 0:
                     if not finished:
                         started = True
@@ -62,7 +67,7 @@ def main():
                             if not finished:
                                 finished = True
                                 voice_loop.run_until_complete(voice.say_phrase(f"{ex_limit}"))
-                                voice_loop.run_until_complete(voice.say_phrase("finished"))
+                                voice_loop.run_until_complete(voice.say_phrase("закончил"))
                             else:
                                 pass
                         else:
@@ -71,7 +76,7 @@ def main():
                         lift_done = True
             else:
                 if found:
-                    voice_loop.run_until_complete(voice.say_phrase("lost you"))
+                    voice_loop.run_until_complete(voice.say_phrase("потерян"))
                     found = False
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) == ord('q'):
@@ -86,4 +91,4 @@ def main():
         return(1)
 
 
-main()
+main("curls", 10)
