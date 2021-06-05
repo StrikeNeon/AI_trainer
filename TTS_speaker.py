@@ -8,6 +8,7 @@ class voice_constructor():
         self.rate = self.engine.getProperty('rate')
         self.volume = self.engine.getProperty('volume')
         self.voices = self.engine.getProperty('voices')
+        self.shutdown = False
 
     def set_rate(self, rate: int = 125):
         self.engine.setProperty('rate', rate)
@@ -21,7 +22,8 @@ class voice_constructor():
     def print_voices(self):
         print([voice.id for voice in self.voices])
 
-    async def say_phrase(self, phrase: str):
-        self.engine.say(phrase)
-        self.engine.runAndWait()
-        self.engine.stop()
+    def loop(self):
+        self.engine.startLoop(False)
+        while not self.shutdown:
+            self.engine.iterate()
+        self.engine.endLoop()

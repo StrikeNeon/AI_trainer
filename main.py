@@ -3,6 +3,8 @@ import cv2
 from pose_estimation import pose_tracker
 from lift_computer import compute_bicep_curl
 from TTS_speaker import voice_constructor
+import threading
+
 
 # TODO pose classification module
 # TODO physical excertion calculator module
@@ -17,7 +19,7 @@ from TTS_speaker import voice_constructor
 # key points, like wrist to sholder for curls, chest to wrist for pushups etc
 
 
-def main(excercise:str, ex_limit: int):
+def main(excercise: str, ex_limit: int):
     cam_width, cam_height = 640, 480
 
     cap = cv2.VideoCapture(0)
@@ -25,8 +27,9 @@ def main(excercise:str, ex_limit: int):
     # cap = cv2.VideoCapture('jerma_walking.mp4')
     ex_dict = {"curls": compute_bicep_curl, "push-up": None, "bench": None}
     p_tracker = pose_tracker(debug_draw=False)
-    voice_loop = asyncio.new_event_loop()
     voice = voice_constructor()
+    voice_thread = threading.Thread(target=voice.loop)
+    voice_thread.start()
     found = False
     started = False
     finished = False
@@ -39,7 +42,7 @@ def main(excercise:str, ex_limit: int):
             pose = p_tracker.find_poses(frame)
             if pose:
                 if not found:
-                    voice_loop.run_until_complete(voice.say_phrase("найден"))
+                    voice.engine.say("найден")
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
 
@@ -56,7 +59,7 @@ def main(excercise:str, ex_limit: int):
                         lifts = 0
                         lift_done = False
                         finished = False
-                        voice_loop.run_until_complete(voice.say_phrase("погнал"))
+                        voice.engine.say("погнал")
                 if started and completion < 1:
                     print(completion)
                 if started and completion == 1:
@@ -66,28 +69,34 @@ def main(excercise:str, ex_limit: int):
                         if lifts+1 == ex_limit:
                             if not finished:
                                 finished = True
-                                voice_loop.run_until_complete(voice.say_phrase(f"{ex_limit}"))
-                                voice_loop.run_until_complete(voice.say_phrase("закончил"))
+                                voice.engine.say(f"{ex_limit}")
+                                voice.engine.say("закончил")
                             else:
                                 pass
                         else:
                             lifts += 1
-                            voice_loop.run_until_complete(voice.say_phrase(f"{lifts}"))
+                            voice.engine.say(f"{lifts}")
                         lift_done = True
             else:
                 if found:
-                    voice_loop.run_until_complete(voice.say_phrase("потерян"))
+                    voice.engine.say("потерян")
                     found = False
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) == ord('q'):
                 break
         cap.release()
         cv2.destroyAllWindows()
+        voice.shutdown = True
+        voice.engine.stop()
+        voice_thread.join()
         return(0)
     except cv2.error:
         print("video interrupted")
         cap.release()
         cv2.destroyAllWindows()
+        voice.shutdown = True
+        voice.engine.stop()
+        voice_thread.join()
         return(1)
 
 
