@@ -34,6 +34,13 @@ class Timer:
 
         self._start_time = time.perf_counter()
 
+    def get_running_time(self):
+        if self._start_time is None:
+            raise TimerError("Timer is not running. Use .start() to start it")
+
+        elapsed_time = time.perf_counter() - self._start_time
+        return round(elapsed_time, 2)
+
     def stop(self):
         """Stop the timer, and report the elapsed time"""
         if self._start_time is None:
@@ -93,7 +100,7 @@ def main(excercise: str, ex_limit: int):
                 if started and 0 < completion < 1:
                     print(completion)
                 if started and completion == 1:
-                    if lift_done:
+                    if lift_done or lift_timer.get_running_time() < 1:
                         pass
                     else:
                         if lifts+1 == ex_limit:
