@@ -1,22 +1,48 @@
-import asyncio
 import cv2
 from pose_estimation import pose_tracker
 from lift_computer import compute_bicep_curl
 from TTS_speaker import voice_constructor
-import threading
+import time
 
+
+# TODO timer calibration module - upper median and lower bands of time
+#  elapsed on the excercise
 
 # TODO pose classification module
-# TODO physical excertion calculator module
-# TODO main file - video capture and processing
 
-# NOTE order of business - pose estimation first, 
-# make a simple test file using downloaded videos
-# while ai pose classification is being developed use switched functions
+# TODO physical excertion calculator module
+
+# TODO main file - video capture and processing
 
 # NOTE I guess I can unify the excercises somewhat
 # by counting the distance between
 # key points, like wrist to sholder for curls, chest to wrist for pushups etc
+
+
+class TimerError(Exception):
+    pass
+
+
+class Timer:
+    def __init__(self):
+        self._start_time = None
+
+    def start(self):
+        """Start a new timer"""
+        if self._start_time is not None:
+            raise TimerError("Timer is running. Use .stop() to stop it")
+
+        self._start_time = time.perf_counter()
+
+    def stop(self):
+        """Stop the timer, and report the elapsed time"""
+        if self._start_time is None:
+            raise TimerError("Timer is not running. Use .start() to start it")
+
+        elapsed_time = time.perf_counter() - self._start_time
+        self._start_time = None
+        # print(f"Elapsed time: {elapsed_time:0.4f} seconds")
+        return round(elapsed_time, 2)
 
 
 def main(excercise: str, ex_limit: int):
@@ -28,25 +54,24 @@ def main(excercise: str, ex_limit: int):
     ex_dict = {"curls": compute_bicep_curl, "push-up": None, "bench": None}
     p_tracker = pose_tracker(debug_draw=False)
     voice = voice_constructor()
-    voice_thread = threading.Thread(target=voice.loop)
-    voice_thread.start()
     found = False
     started = False
     finished = False
     lift_done = False
     lifts = 0
     ex_limit = ex_limit
+    lift_timer = Timer()
     try:
         while cap.isOpened():
             ret, frame = cap.read()
             pose = p_tracker.find_poses(frame)
             if pose:
                 if not found:
-                    voice.engine.say("найден")
+                    voice.say_command("найден")
                     found = True
                 pose_data = p_tracker.get_landmark_data(frame, pose)
 
-                # classifier here, matching scheduled pose to classified and ensuring starting teminal state
+                # classifier here, matching scheduled pose to classified and ensuring valid teminal state
 
                 completion, frame = ex_dict[excercise](p_tracker,
                                                        pose_data,
@@ -55,12 +80,17 @@ def main(excercise: str, ex_limit: int):
                     if not finished:
                         started = True
                         lift_done = False
+                        try:
+                            lift_timer.start()
+                        except TimerError:
+                            pass
                     else:
                         lifts = 0
                         lift_done = False
                         finished = False
-                        voice.engine.say("погнал")
-                if started and completion < 1:
+                        lift_timer.start()
+                        voice.say_command("погнал")
+                if started and 0 < completion < 1:
                     print(completion)
                 if started and completion == 1:
                     if lift_done:
@@ -69,17 +99,20 @@ def main(excercise: str, ex_limit: int):
                         if lifts+1 == ex_limit:
                             if not finished:
                                 finished = True
-                                voice.engine.say(f"{ex_limit}")
-                                voice.engine.say("закончил")
+                                voice.say_command(f"{ex_limit}")
+                                voice.say_command("закончил")
                             else:
                                 pass
                         else:
                             lifts += 1
-                            voice.engine.say(f"{lifts}")
+                            voice.say_command(f"{lifts}")
+                            print(lifts)
                         lift_done = True
+                        stop_time = lift_timer.stop()
+                        print(stop_time)
             else:
                 if found:
-                    voice.engine.say("потерян")
+                    voice.say_command("потерян")
                     found = False
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) == ord('q'):
@@ -88,7 +121,6 @@ def main(excercise: str, ex_limit: int):
         cv2.destroyAllWindows()
         voice.shutdown = True
         voice.engine.stop()
-        voice_thread.join()
         return(0)
     except cv2.error:
         print("video interrupted")
@@ -96,7 +128,6 @@ def main(excercise: str, ex_limit: int):
         cv2.destroyAllWindows()
         voice.shutdown = True
         voice.engine.stop()
-        voice_thread.join()
         return(1)
 
 

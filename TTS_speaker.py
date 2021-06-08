@@ -1,4 +1,6 @@
 import pyttsx3
+import threading
+from time import sleep
 
 
 class voice_constructor():
@@ -8,7 +10,9 @@ class voice_constructor():
         self.rate = self.engine.getProperty('rate')
         self.volume = self.engine.getProperty('volume')
         self.voices = self.engine.getProperty('voices')
-        self.shutdown = False
+        self.engine.connect('started-utterance', self.onStart)
+        self.engine.connect('finished-utterance', self.onEnd)
+        self.busy = False
 
     def set_rate(self, rate: int = 125):
         self.engine.setProperty('rate', rate)
@@ -19,11 +23,24 @@ class voice_constructor():
     def set_voice(self, voice_index: int = 0):
         self.engine.setProperty('voice', self.voices[voice_index].id)
 
+    def onStart(self, name):
+        self.busy = True
+
+    def onEnd(self, name, completed):
+        self.busy = False
+
     def print_voices(self):
         print([voice.id for voice in self.voices])
 
-    def loop(self):
-        self.engine.startLoop(False)
-        while not self.shutdown:
-            self.engine.iterate()
-        self.engine.endLoop()
+    def say_task(self, text):
+        while self.busy:
+            sleep(0.10)
+        self.engine.say(text)
+        self.engine.runAndWait()
+        self.engine.stop()
+        return
+
+    def say_command(self, text):
+        threading.Thread(
+                target=self.say_task, args=(text,), daemon=True
+                ).start()

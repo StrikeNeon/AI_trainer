@@ -3,6 +3,7 @@ import mediapipe
 from numpy import ndarray, interp
 from cv2 import line
 
+
 class pose_tracker():
     def __init__(self, mode: bool = False, upBody: bool = False, smooth: bool = True,
                  model_complexity: int = 0, debug_draw: bool = False,
