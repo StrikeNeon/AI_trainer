@@ -7,7 +7,7 @@ from cv2 import line
 class pose_tracker():
     def __init__(self, mode: bool = False, upBody: bool = False, smooth: bool = True,
                  model_complexity: int = 0, debug_draw: bool = False,
-                 min_detection_confidence: float = 0.8, min_tracking_confidence: float = 0.5):
+                 min_detection_confidence: float = 0.8, min_tracking_confidence: float = 0.6):
         self.mp_pose = mediapipe.solutions.pose
         self.pose = self.mp_pose.Pose(min_detection_confidence=min_detection_confidence,
                                       min_tracking_confidence=min_tracking_confidence)

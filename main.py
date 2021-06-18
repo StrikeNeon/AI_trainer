@@ -52,7 +52,7 @@ class Timer:
         return round(elapsed_time, 2)
 
 
-def main(excercise: str, ex_limit: int):
+def main(excercise: str, ex_limit: int, lift_median: float):
     cam_width, cam_height = 640, 480
 
     cap = cv2.VideoCapture(0)
@@ -66,7 +66,6 @@ def main(excercise: str, ex_limit: int):
     finished = False
     lift_done = False
     lifts = 0
-    ex_limit = ex_limit
     lift_timer = Timer()
     try:
         while cap.isOpened():
@@ -115,6 +114,14 @@ def main(excercise: str, ex_limit: int):
                             voice.say_command(f"{lifts}")
                             print(lifts)
                         lift_done = True
+                        time_spent = lift_timer.get_running_time()
+                        
+                        if time_spent > lift_median+1:
+                            voice.say_command(f"быстрее ебаш")
+                        elif lift_median+1 > time_spent > lift_median-0.5:
+                            voice.say_command(f"ок")
+                        elif time_spent < lift_median-0.5:
+                            voice.say_command(f"тормозни")
                         stop_time = lift_timer.stop()
                         print(stop_time)
             else:
@@ -138,4 +145,4 @@ def main(excercise: str, ex_limit: int):
         return(1)
 
 
-main("curls", 10)
+main("curls", 10, 1.5)
